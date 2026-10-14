@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ru"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <title>Расчёт стоимости проекта</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Jost:wght@300;400;500&family=Golos+Text:wght@400;500;600&family=Manrope:wght@400;600&family=Oswald:wght@300;500&family=Playfair+Display:wght@400;600&family=Cormorant+Garamond:wght@400;600&family=Montserrat:wght@300;500&display=swap">
 <style id="ff"></style>
@@ -93,6 +94,15 @@ dialog textarea{width:100%;height:240px;margin:.8rem 0;border:1.5px solid var(--
 <dialog id="pwd"><p id="pwt"></p><input class="in" type="password" id="pwi" autocomplete="off"><br><br><button id="pwok">OK</button> <button class="o" id="pwc">Отмена</button></dialog>
 <script id="seed" type="application/json">null</script>
 <script>
+/* ===== НАСТРОЙКА ===== */
+/* Адрес вебхука из Make (модуль Webhooks → Custom webhook). Пароль админа здесь больше НЕ хранится — он проверяется в Make. */
+const WEBHOOK_URL='';
+/* ===================== */
+const tg=(window.Telegram&&Telegram.WebApp)||null;
+if(tg){try{tg.ready();tg.expand();tg.setHeaderColor('#dde4ea');tg.setBackgroundColor('#dde4ea')}catch(e){}}
+const TGU=(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user)||null;
+const SID=(()=>{try{let s=sessionStorage.getItem('sid');if(!s){s=(TGU?TGU.id+'-':'')+Date.now().toString(36)+Math.random().toString(36).slice(2,8);sessionStorage.setItem('sid',s)}return s}catch(e){return 'x'+Math.random().toString(36).slice(2)}})();
+const CKEY='archcalc_cfg',DKEY='archcalc_draft',UKEY='archcalc_u_'+(TGU?TGU.id:'guest');
 const q=s=>document.querySelector(s),qa=s=>[...document.querySelectorAll(s)];
 let n=0;const uid=()=>'i'+Date.now().toString(36)+(n++);
 const F=t=>({id:uid(),title:t,note:'',price:0,over:null,on:true,imgs:[]});
@@ -102,30 +112,21 @@ const DEF=()=>({name:'Жилой дом',area:100,cur:'₽',email:'',texts:{},fo
  S('АР — архитектурные решения',['Планировка','Фасады','Обмерный план','Разрезы'],'АР'),
  S('КР — конструктивные решения',['Планировка','Фасады'],'КР')]});
 const SEED=(()=>{try{return JSON.parse(q('#seed').textContent)}catch(e){return null}})();
-const DEFPW={s:'k7Qe2Vn9xA4d',h:'6d4272d101f0e0cd5d141f06498ae9b3c26b6e28437057df2609f57051fc39c4'};
-const TX={logo:'Архитектурная студия',kicker:'Предварительный расчёт',h1a:'Стоимость',h1b:'проекта',lead:'Отметьте нужные работы, укажите площадь — картотека посчитает стоимость каждого раздела. Цена за м² у каждой позиции своя.',h_main:'Общие сведения',lb_name:'Название проекта',lb_area:'Площадь, м²',lb_cur:'Валюта',r_title:'Смета',r_area:'площадь',r_total:'Итого',send:'Отправить расчёт',lb_price:'Цена за м²',lb_cost:'Стоимость',lb_sec:'Итого по разделу',tab0:'Проект',subject:'Расчёт стоимости проекта',title:'Расчёт стоимости проекта'};
-function sha256(m){const K=[],H=[];let p=2,c=0;
-for(;c<64;p++){let pr=1;for(let d=2;d*d<=p;d++)if(p%d==0){pr=0;break}
-if(pr){if(c<8)H[c]=(Math.pow(p,.5)%1)*4294967296|0;K[c++]=(Math.pow(p,1/3)%1)*4294967296|0}}
-const l=m.length,n=((l+9+63)>>6)<<6,bf=new Uint8Array(n);bf.set(m);bf[l]=128;
-const dv=new DataView(bf.buffer);dv.setUint32(n-8,Math.floor(l/536870912));dv.setUint32(n-4,(l<<3)>>>0);
-const h=H.slice(),w=new Array(64),R=(x,k)=>(x>>>k)|(x<<(32-k));
-for(let o=0;o<n;o+=64){for(let i=0;i<16;i++)w[i]=dv.getUint32(o+i*4);
-for(let i=16;i<64;i++){const a=w[i-15],e=w[i-2];w[i]=(w[i-16]+(R(a,7)^R(a,18)^(a>>>3))+w[i-7]+(R(e,17)^R(e,19)^(e>>>10)))|0}
-let[a,b,c,d,e,f,g,k]=h;
-for(let i=0;i<64;i++){const t1=(k+(R(e,6)^R(e,11)^R(e,25))+((e&f)^(~e&g))+K[i]+w[i])|0,t2=((R(a,2)^R(a,13)^R(a,22))+((a&b)^(a&c)^(b&c)))|0;
-k=g;g=f;f=e;e=(d+t1)|0;d=c;c=b;b=a;a=(t1+t2)|0}
-[a,b,c,d,e,f,g,k].forEach((v,i)=>h[i]=(h[i]+v)|0)}
-const out=new Uint8Array(32),ov=new DataView(out.buffer);h.forEach((x,i)=>ov.setUint32(i*4,x>>>0));return out}
-const enc=s=>new TextEncoder().encode(s),cat=(a,b)=>{const r=new Uint8Array(a.length+b.length);r.set(a);r.set(b,a.length);return r};
-function hashPw(p,s){const pb=enc(p);let h=sha256(cat(enc(s),pb));for(let i=0;i<20000;i++)h=sha256(cat(h,pb));return[...h].map(x=>x.toString(16).padStart(2,'0')).join('')}
+const TX={logo:'Архитектурная студия',kicker:'Предварительный расчёт',h1a:'Стоимость',h1b:'проекта',lead:'Отметьте нужные работы, укажите площадь — картотека посчитает стоимость каждого раздела. Цена за м² у каждой позиции своя.',h_main:'Общие сведения',lb_name:'Название проекта',lb_area:'Площадь, м²',lb_cur:'Валюта',r_title:'Смета',r_area:'площадь',r_total:'Итого',send:'Отправить расчёт',lb_price:'Цена за м²',lb_cost:'Стоимость',lb_sec:'Итого по разделу',tab0:'Проект',subject:'Расчёт стоимости проекта',title:'Расчёт стоимости проекта',sent:'Расчёт отправлен. Мы скоро свяжемся с вами.',client_msg:'Спасибо за заявку! Мы получили ваш расчёт и скоро свяжемся с вами.'};
 const tx=k=>st.texts[k]!=null?st.texts[k]:TX[k];
-let loc;try{loc=JSON.parse(localStorage.getItem('archcalc'))}catch(e){}
-let st=loc&&loc.sections&&(!SEED||loc.pub===SEED.pub)?loc:(SEED&&SEED.sections?SEED:DEF());
-st.fonts=st.fonts||[];st.fd=st.fd||[];st.texts=st.texts||{};st.pw=st.pw||DEFPW;
+const lsGet=k=>{try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}};
+const norm=c=>{c.fonts=c.fonts||[];c.fd=c.fd||[];c.texts=c.texts||{};delete c.pw;return c};
+/* конфиг (разделы, цены, тексты) приходит из Make; здесь — кэш последней версии */
+let st=norm((()=>{let b=lsGet(CKEY);if(!(b&&b.sections))b=null;if(SEED&&SEED.sections&&(!b||(b.pub||0)<(SEED.pub||0)))b=SEED;return b||DEF()})());
+/* ввод клиента (название, площадь, галочки) хранится отдельно и не мешается с конфигом */
+function applyUser(){const u=lsGet(UKEY);if(!u)return;if(u.name!=null)st.name=u.name;if(u.area!=null)st.area=u.area;
+ if(u.on)st.sections.forEach(s=>s.fields.forEach(f=>{if(f.id in u.on)f.on=u.on[f.id]}))}
+applyUser();
 let A=0,edit=false,saved=null;
 function toast(m){const t=document.createElement('div');t.id='tt';t.textContent=m;document.body.append(t);setTimeout(()=>t.remove(),4000)}
-const save=()=>{try{localStorage.setItem('archcalc',JSON.stringify(st))}catch(e){toast('В браузере не хватило места: уменьшите фото или файл шрифта')}};
+const save=()=>{const u={name:st.name,area:st.area,on:{}};st.sections.forEach(s=>s.fields.forEach(f=>u.on[f.id]=f.on!==false));
+ if(!lsSet(UKEY,u)||(edit&&!lsSet(DKEY,st)))toast('В браузере не хватило места: уменьшите фото или файл шрифта')};
 const esc=s=>String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 const plain=h=>{const d=document.createElement('div');d.innerHTML=h;return d.textContent.trim()||'Без названия'};
 const X=(k,tag='span')=>`<${tag} class="rt" data-x="${k}" ${edit?'contenteditable':''}>${tx(k)}</${tag}>`;
@@ -141,7 +142,8 @@ const fmt=v=>Math.round(v).toLocaleString('ru-RU')+' '+st.cur;
 const m2=v=>st.area>0?fmt(v/st.area)+' / м²':'';
 const label=s=>s.tab||plain(s.title);
 function addFont(f){if(f.d)q('#ff').textContent+=`@font-face{font-family:"${f.n}";src:url(${f.d})}`;else{const l=document.createElement('link');l.rel='stylesheet';l.dataset.dyn=1;l.href='https://fonts.googleapis.com/css2?family='+f.n.replace(/ /g,'+')+':wght@300;400;500;600&display=swap';document.head.append(l)}}
-st.fd.forEach(addFont);st.fonts.forEach(n=>addFont({n}));
+function loadFonts(){q('#ff').textContent='';qa('link[data-dyn]').forEach(e=>e.remove());st.fd.forEach(addFont);st.fonts.forEach(n=>addFont({n}))}
+loadFonts();
 const BASE=['Golos Text','Bebas Neue','Jost','Manrope','Oswald','Montserrat','Playfair Display','Cormorant Garamond','Arial','Georgia'];
 const SYM=['°','±','²','³','⌀','∠','≥','≤','≈','×','‰','½','¼','↔','⊥','∥','м²','м³','№','Σ'];
 const bc=s=>{let h=0,a=[],x=0;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;for(let i=0;i<34;i++){h=(h*1103515245+12345)>>>0;const w=1+(h>>16)%4,g=1+(h>>20)%3;a.push(`#151515 ${x}px ${x+w}px,transparent ${x+w}px ${x+w+g}px`);x+=w+g}return`linear-gradient(90deg,${a.join(',')})`};
@@ -157,7 +159,7 @@ function mainCard(){return`<div class="mg"><div>${X('h_main','h2')}
 <div class="g3"><label class="l">${X('lb_name')}<input class="in" data-p="name" value="${esc(st.name)}"></label>
 <label class="l">${X('lb_area')}<input class="in" type="number" min="0" step="any" data-p="area" value="${esc(st.area)}"></label>
 <label class="l">${X('lb_cur')}<input class="in" data-p="cur" maxlength="6" value="${esc(st.cur)}"></label></div>
-${edit?`<div class="adm"><label class="l">Почта для заявок<input class="in" data-p="email" value="${esc(st.email)}"></label><label class="l">Тема письма<input class="in" data-tx="subject" value="${esc(tx('subject'))}"></label><label class="l">Заголовок вкладки браузера<input class="in" data-tx="title" value="${esc(tx('title'))}"></label><label class="l">Подпись ярлыка «Проект»<input class="in" data-tx="tab0" value="${esc(tx('tab0'))}"></label></div>`:''}</div>
+${edit?`<div class="adm"><label class="l">Сообщение клиенту в чат (отправит Make)<input class="in" data-tx="client_msg" value="${esc(tx('client_msg'))}"></label><label class="l">Текст в приложении после отправки<input class="in" data-tx="sent" value="${esc(tx('sent'))}"></label><label class="l">Заголовок заявки<input class="in" data-tx="subject" value="${esc(tx('subject'))}"></label><label class="l">Заголовок вкладки браузера<input class="in" data-tx="title" value="${esc(tx('title'))}"></label><label class="l">Подпись ярлыка «Проект»<input class="in" data-tx="tab0" value="${esc(tx('tab0'))}"></label></div>`:''}</div>
 <div class="rc"><h4>${X('r_title')}</h4><p><span>${esc(st.name)}</span></p><p>${X('r_area')}<span>${esc(st.area)} м²</span></p><hr style="border:0;border-top:1px dashed #2b2e33;margin:.4rem 0">
 ${st.sections.map(s=>`<p><span>${esc(label(s))}</span><span data-t="sec:${s.id}"></span></p>`).join('')}
 <p class="t">${X('r_total')}<span data-t="grand"></span></p><p><span></span><span data-t="grandm2"></span></p>
@@ -174,7 +176,7 @@ ${edit?`<button data-a="addf" data-v="${s.id}">+ добавить поле</butt
 
 function render(){
  q('#stack').innerHTML=['main'].concat(st.sections).map((s,i)=>`<div class="fo" data-i="${i}"><button class="tab" data-a="tab" data-v="${i}">${esc(s=='main'?tx('tab0'):label(s))}</button><div class="fb">${s=='main'?mainCard():secCard(s)}</div></div>`).join('');
- q('#tb').innerHTML=edit?`<div class="tb"><select id="ff2" title="Шрифт">${BASE.concat(st.fonts,st.fd.map(f=>f.n)).map(f=>`<option>${esc(f)}</option>`).join('')}</select><select id="fs" title="Размер">${[12,14,16,18,20,24,28,32,40,48].map(s=>`<option ${s==16?'selected':''}>${s}</option>`).join('')}</select><button class="o" data-c="bold"><b>Ж</b></button><button class="o" data-c="italic"><i>К</i></button><button class="o" data-c="underline"><u>Ч</u></button><input type="color" id="fc" value="#2b2e33" title="Цвет"><select id="sym"><option value="">Символ…</option>${SYM.map(s=>`<option>${s}</option>`).join('')}</select><input id="nf" placeholder="Google-шрифт"><button class="o" data-a="addfont">+</button><label class="b o">Файл шрифта<input type="file" accept=".ttf,.otf,.woff,.woff2" hidden id="ffile"></label><button class="o" data-a="addsec">+ раздел</button><button class="o" data-a="pw">Пароль</button><button class="o" data-a="export">Сохранить сайт</button><button class="o" data-a="data">Данные</button></div>`:'';
+ q('#tb').innerHTML=edit?`<div class="tb"><select id="ff2" title="Шрифт">${BASE.concat(st.fonts,st.fd.map(f=>f.n)).map(f=>`<option>${esc(f)}</option>`).join('')}</select><select id="fs" title="Размер">${[12,14,16,18,20,24,28,32,40,48].map(s=>`<option ${s==16?'selected':''}>${s}</option>`).join('')}</select><button class="o" data-c="bold"><b>Ж</b></button><button class="o" data-c="italic"><i>К</i></button><button class="o" data-c="underline"><u>Ч</u></button><input type="color" id="fc" value="#2b2e33" title="Цвет"><select id="sym"><option value="">Символ…</option>${SYM.map(s=>`<option>${s}</option>`).join('')}</select><input id="nf" placeholder="Google-шрифт"><button class="o" data-a="addfont">+</button><label class="b o">Файл шрифта<input type="file" accept=".ttf,.otf,.woff,.woff2" hidden id="ffile"></label><button class="o" data-a="addsec">+ раздел</button><button data-a="publish">Опубликовать</button><button class="o" data-a="export">Скачать HTML</button><button class="o" data-a="data">Данные</button></div>`:'';
  document.body.classList.toggle('ed',edit);applyStatic();q('#ed').textContent=edit?'готово':'править';q('#ed').classList.toggle('on-btn',edit);
  A=Math.min(A,st.sections.length);layout(A,false);upd();
 }
@@ -207,16 +209,46 @@ function ex(cmd,val,px){
  const nd=getSelection().anchorNode,el=nd&&(nd.nodeType==1?nd:nd.parentElement).closest('.rt');if(el)sync(el);
 }
 document.addEventListener('mousedown',e=>{if(e.target.closest('.tb button'))e.preventDefault()});
-let unlocked=false,fails=0;
+let unlocked=false,fails=0,token=null;
+async function call(action,data){
+ if(!WEBHOOK_URL)throw new Error('nowebhook');
+ const ctl=new AbortController(),t=setTimeout(()=>ctl.abort(),30000);
+ try{const r=await fetch(WEBHOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},signal:ctl.signal,
+   body:JSON.stringify({action,sessionId:SID,initData:tg?tg.initData:'',user:TGU,...data})});
+  const j=await r.json().catch(()=>null);return j||{ok:r.ok}}finally{clearTimeout(t)}}
+const notify=m=>{if(tg&&tg.initData){try{return tg.showAlert(m)}catch(e){}}toast(m)};
+const netErr=e=>toast(e&&e.message=='nowebhook'?'Не задан WEBHOOK_URL в коде':'Нет связи с сервером');
 function askPw(t){return new Promise(res=>{const d=q('#pwd'),i=q('#pwi');q('#pwt').textContent=t;i.value='';let v=null;const done=x=>{v=x;d.close()};q('#pwok').onclick=()=>done(i.value);q('#pwc').onclick=()=>done(null);i.onkeydown=e=>{if(e.key=='Enter')done(i.value)};d.onclose=()=>res(v);d.showModal();i.focus()})}
 q('#ed').onclick=async()=>{if(edit){edit=false;render();return}
  if(!unlocked){const p=await askPw('Введите пароль для редактирования');if(p===null)return;
-  if(hashPw(p,st.pw.s)!==st.pw.h){fails++;await new Promise(r=>setTimeout(r,Math.min(5000,600*fails)));toast('Неверный пароль');return}
-  unlocked=true;fails=0}
+  const b=q('#ed');b.disabled=true;let r;
+  try{r=await call('auth',{password:p})}catch(e){b.disabled=false;return netErr(e)}
+  b.disabled=false;
+  if(!r||!r.ok||!r.token){fails++;await new Promise(r=>setTimeout(r,Math.min(5000,600*fails)));return toast('Неверный пароль')}
+  token=r.token;unlocked=true;fails=0;
+  const d=lsGet(DKEY);if(d&&d.sections&&d.pub===st.pub){st=norm(d);loadFonts();toast('Загружен несохранённый черновик')}}
  edit=true;render()};
-async function chPw(){const p=await askPw('Новый пароль (не короче 8 символов)');if(p===null)return;if(p.length<8)return toast('Слишком короткий пароль');
- if(await askPw('Повторите новый пароль')!==p)return toast('Пароли не совпали');
- const s=[...crypto.getRandomValues(new Uint8Array(8))].map(x=>x.toString(16)).join('');st.pw={s,h:hashPw(p,s)};save();toast('Пароль изменён. Нажмите «Сохранить сайт» и загрузите файл на хостинг')}
+async function publish(b){
+ if(!token)return toast('Сначала войдите как администратор');
+ const old=st.pub;st.pub=Date.now();
+ if(JSON.stringify(st).length>4.5e6){st.pub=old;return toast('Слишком много данных — уменьшите фото или файл шрифта')}
+ b.disabled=true;
+ try{const r=await call('save_config',{token,config:st});
+  if(r.ok){try{localStorage.removeItem(DKEY)}catch(e){};lsSet(CKEY,st);toast('Опубликовано')}
+  else{st.pub=old;if(r.error=='auth'){token=null;unlocked=false;edit=false;render();toast('Сессия истекла — войдите заново')}else toast('Сервер отклонил сохранение')}}
+ catch(e){st.pub=old;netErr(e)}finally{b.disabled=false}}
+async function sendCalc(b){
+ const L=[st.name+' — '+st.area+' м²',''];
+ const secs=st.sections.map(s=>{L.push(plain(s.title)+': '+fmt(secSum(s)));
+  const fs=s.fields.filter(f=>f.on!==false);fs.forEach(f=>L.push('  — '+plain(f.title)+': '+fmt(amt(f))));
+  return{title:plain(s.title),sum:Math.round(secSum(s)),fields:fs.map(f=>({title:plain(f.title),amount:Math.round(amt(f))}))}});
+ L.push('',plain(tx('r_total'))+': '+fmt(total()));
+ b.disabled=true;
+ try{const r=await call('submit',{subject:tx('subject'),clientMsg:tx('client_msg'),text:L.join('\n'),
+   calc:{name:st.name,area:+st.area||0,cur:st.cur,total:Math.round(total()),sections:secs}});
+  if(r.ok===false)throw 0;notify(tx('sent'))}
+ catch(e){e===0||(e&&e.message=='nowebhook')?netErr(e||{}):toast('Не удалось отправить. Попробуйте ещё раз')}
+ finally{b.disabled=false}}
 function exportSite(){st.pub=Date.now();save();const c=document.documentElement.cloneNode(true);
  c.querySelector('#seed').textContent=JSON.stringify(st).replace(/</g,'\\u003c');
  ['#stack','#tb','#ff'].forEach(s=>c.querySelector(s).innerHTML='');c.querySelector('#stack').removeAttribute('style');
@@ -231,8 +263,8 @@ document.addEventListener('click',e=>{
  const a=b.dataset.a,v=b.dataset.v,f=b.dataset.f;
  const arm=()=>{if(b.dataset.armed)return true;b.dataset.armed=1;const o=b.textContent;b.textContent='Нажмите ещё раз';setTimeout(()=>{delete b.dataset.armed;b.textContent=o},3000);return false};
  if(a=='tab'){const p=A;A=+v;if(p!=A)layout(p,true)}
- else if(a=='send'){const L=[st.name+' — '+st.area+' м²',''];st.sections.forEach(s=>{L.push(plain(s.title)+': '+fmt(secSum(s)));s.fields.filter(f=>f.on!==false).forEach(f=>L.push('  — '+plain(f.title)+': '+fmt(amt(f))))});L.push('',plain(tx('r_total'))+': '+fmt(total()));location.href='mailto:'+st.email+'?subject='+encodeURIComponent(tx('subject'))+'&body='+encodeURIComponent(L.join('\n'))}
- else if(a=='pw')chPw();
+ else if(a=='send')sendCalc(b);
+ else if(a=='publish')publish(b);
  else if(a=='export')exportSite();
  else if(a=='addsec'){const s=S('Новый раздел',['Поле 1'],'Новый');st.sections.push(s);A=st.sections.length;save();render()}
  else if(a=='delsec'){if(!arm())return;st.sections=st.sections.filter(s=>s.id!=v);A=0;save();render()}
@@ -244,7 +276,7 @@ document.addEventListener('click',e=>{
  else if(a=='data'){q('#ta').value=JSON.stringify(st);q('#dlg').showModal()}
 });
 q('#cls').onclick=()=>q('#dlg').close();
-q('#imp').onclick=()=>{try{const d=JSON.parse(q('#ta').value);if(!d.sections)throw 0;st=d;st.texts=st.texts||{};st.pw=st.pw||DEFPW;st.fonts=st.fonts||[];st.fd=st.fd||[];st.fd.forEach(addFont);st.fonts.forEach(n=>addFont({n}));A=0;save();render();q('#dlg').close()}catch(e){q('#ta').value='Не удалось прочитать данные — вставьте полный текст копии.'}};
+q('#imp').onclick=()=>{try{const d=JSON.parse(q('#ta').value);if(!d.sections)throw 0;st=d;st.texts=st.texts||{};norm(st);loadFonts();A=0;save();render();q('#dlg').close()}catch(e){q('#ta').value='Не удалось прочитать данные — вставьте полный текст копии.'}};
 document.addEventListener('input',e=>{
  const t=e.target,d=t.dataset;
  if(t.classList&&t.classList.contains('rt'))return sync(t);
@@ -271,4 +303,10 @@ document.addEventListener('change',e=>{
  }
 });
 render();
+function applyRemote(c){
+ if(typeof c=='string'){try{c=JSON.parse(c)}catch(e){return}}
+ if(!c||!c.sections||(c.pub||0)===(st.pub||0))return;
+ st=norm(c);lsSet(CKEY,st);applyUser();loadFonts();A=0;render()}
+(async()=>{try{const r=await call('init',{startParam:(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.start_param)||'',pub:st.pub||0});
+ if(r&&r.ok&&r.config&&!edit)applyRemote(r.config)}catch(e){}})();
 </script></body></html>
