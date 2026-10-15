@@ -96,7 +96,7 @@ dialog textarea{width:100%;height:240px;margin:.8rem 0;border:1.5px solid var(--
 <script>
 /* ===== НАСТРОЙКА ===== */
 /* Адрес вебхука из Make (модуль Webhooks → Custom webhook). Пароль админа здесь больше НЕ хранится — он проверяется в Make. */
-const WEBHOOK_URL='https://hook.eu2.make.com/3bedlrb8hu6rnqw5njw7246c4uxv7ajt';
+const WEBHOOK_URL='';
 /* ===================== */
 const tg=(window.Telegram&&Telegram.WebApp)||null;
 if(tg){try{tg.ready();tg.expand();tg.setHeaderColor('#dde4ea');tg.setBackgroundColor('#dde4ea')}catch(e){}}
@@ -233,7 +233,7 @@ async function publish(b){
  const old=st.pub;st.pub=Date.now();
  if(JSON.stringify(st).length>4.5e6){st.pub=old;return toast('Слишком много данных — уменьшите фото или файл шрифта')}
  b.disabled=true;
- try{const r=await call('save_config',{token,config:st});
+ try{const r=await call('save_config',{token,config:JSON.stringify(st)});
   if(r.ok){try{localStorage.removeItem(DKEY)}catch(e){};lsSet(CKEY,st);toast('Опубликовано')}
   else{st.pub=old;if(r.error=='auth'){token=null;unlocked=false;edit=false;render();toast('Сессия истекла — войдите заново')}else toast('Сервер отклонил сохранение')}}
  catch(e){st.pub=old;netErr(e)}finally{b.disabled=false}}
